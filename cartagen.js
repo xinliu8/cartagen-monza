@@ -5198,6 +5198,8 @@ var Cartagen = {
 
 		if (!Config.static_map) {
 			Importer.get_current_plot(true)
+			new PeriodicalExecuter(Glop.trigger_draw,3)
+			new PeriodicalExecuter(function() { Importer.get_current_plot(false) },3)
 		} else {
 			Config.static_map_layers.each(function(layer_url) {
 				$l('fetching '+layer_url)
@@ -5238,6 +5240,7 @@ var Cartagen = {
 		Viewport.draw() //adjust viewport
 
 		Glop.fire('cartagen:predraw')
+
 
 		Geohash.objects.each(function(object) {
 			if (object.user_submitted) {
