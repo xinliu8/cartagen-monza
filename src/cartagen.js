@@ -179,6 +179,7 @@ var Cartagen = {
 			Importer.get_current_plot(true)
 			new PeriodicalExecuter(Glop.trigger_draw,3)
 			new PeriodicalExecuter(function() { Importer.get_current_plot(false) },3)
+			//window.setInterval(function() { Importer.get_current_plot(false) }, 3000)
 		} else {
 			Config.static_map_layers.each(function(layer_url) {
 				$l('fetching '+layer_url)
@@ -242,9 +243,6 @@ var Cartagen = {
 		 *@event
 		 */
 		Glop.fire('cartagen:predraw')
-		
-		// Xin
-		//Importer.get_current_plot(true)
 		
 		//Geohash lookup:
 		Geohash.objects.each(function(object) {

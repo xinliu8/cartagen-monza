@@ -5241,7 +5241,6 @@ var Cartagen = {
 
 		Glop.fire('cartagen:predraw')
 
-
 		Geohash.objects.each(function(object) {
 			if (object.user_submitted) {
 				Cartagen.feature_queue.push(object)
