@@ -169,8 +169,9 @@ var Importer = {
 		
 		Importer.requested_plots++
 		var finished = false
-		// var req = new Ajax.Request('/api/0.6/map.json?bbox='+_lng1+","+_lat1+','+_lng2+','+_lat2,{
-		var req = new Ajax.Request('/api/0.6/geohash/'+key+'.json',{
+		var bbox = Geohash.bbox(key)
+		var req = new Ajax.Request('/api/0.6/map.json?bbox='+bbox[0]+","+bbox[3]+','+bbox[2]+','+bbox[1],{
+		//var req = new Ajax.Request('/api/0.6/geohash/'+key+'.json',{
 			method: 'get',
 			onSuccess: function(result) {
 				finished = true
@@ -252,7 +253,7 @@ var Importer = {
 					})
 				} else {
 					data.tags.set(way.tag.k,way.tag.v)
-					if (tag.v == 'coastline') data.coastline = true
+					if (way.tag.v == 'coastline') data.coastline = true
 				}
 			}
 			new Way(data)

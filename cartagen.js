@@ -5198,8 +5198,6 @@ var Cartagen = {
 
 		if (!Config.static_map) {
 			Importer.get_current_plot(true)
-			new PeriodicalExecuter(Glop.trigger_draw,3)
-			new PeriodicalExecuter(function() { Importer.get_current_plot(false) },3)
 		} else {
 			Config.static_map_layers.each(function(layer_url) {
 				$l('fetching '+layer_url)
@@ -6574,7 +6572,8 @@ var Importer = {
 
 		Importer.requested_plots++
 		var finished = false
-		var req = new Ajax.Request('/api/0.6/geohash/'+key+'.json',{
+		var bbox = Geohash.bbox(key)
+		var req = new Ajax.Request('/api/0.6/map.json?bbox='+bbox[0]+","+bbox[3]+','+bbox[2]+','+bbox[1],{
 			method: 'get',
 			onSuccess: function(result) {
 				finished = true
@@ -6650,7 +6649,7 @@ var Importer = {
 					})
 				} else {
 					data.tags.set(way.tag.k,way.tag.v)
-					if (tag.v == 'coastline') data.coastline = true
+					if (way.tag.v == 'coastline') data.coastline = true
 				}
 			}
 			new Way(data)
@@ -9015,6 +9014,7 @@ Object.extend(Geohash, {
 					 key)
 		$C.restore()
 	},
+
 	draw_bboxes: function() {
 		if (Geohash.grid) {
 			this.keys.keys().each(function(key){

@@ -339,6 +339,7 @@ Object.extend(Geohash, {
 					 key)
 		$C.restore()
 	},
+			
 	draw_bboxes: function() {
 		if (Geohash.grid) {
 			this.keys.keys().each(function(key){
