@@ -5170,7 +5170,8 @@ var Cartagen = {
 	scripts: [],
 	setup: function(configs) {
 		$(document).observe('dom:loaded', function() {
-			$('canvas').insert('<canvas style="z-index:20;" id="main"></canvas>')
+			$('canvas').insert('<canvas id="main"></canvas>')
+			$('main').addClassName('cartagen')
 			Cartagen.initialize(configs)
 		})
 	},
@@ -6480,19 +6481,20 @@ var Importer = {
 		}
 
 		try {
-			if (localStorage && localStorage.length && localStorage.getItem) {
+			if (localStorage) {
 				Importer.localStorage = true
 			}
 			else {
 				Importer.localStorage = false
 			}
+			Importer.localStorage = false
 		}
 		catch (e) {
 			Importer.localStorage = false
 		}
 	},
-	flush_localstorage: function() {
-		if (Importer.localStorage && !Config.suppress_interface && localStorage.length > 200) {
+	flush_localStorage: function() {
+		if (Importer.localStorage && !Config.suppress_interface) {
 			var answer = confirm('Your localStorage is filling up ('+localStorage.length+' entries) and may cause slowness in some browsers. Click OK to flush it and begin repopulating it from new data.')
 			if (answer) {
 				localStorage.clear()
@@ -6575,12 +6577,18 @@ var Importer = {
 		Importer.requested_plots++
 		var finished = false
 		var bbox = Geohash.bbox(key)
-		var req = new Ajax.Request('/api/0.6/map.json?bbox='+bbox[0]+","+bbox[3]+','+bbox[2]+','+bbox[1],{
+		var req = new Ajax.Request('/api/0.6/geohash/'+key+'.json',{
 			method: 'get',
 			onSuccess: function(result) {
 				finished = true
 				Importer.parse_objects(Importer.parse(result.responseText), key)
-				if (Importer.localStorage) localStorage.setItem('geohash_'+key,result.responseText)
+				if (Importer.localStorage) {
+					try {
+						localStorage.setItem('geohash_'+key,result.responseText)
+					} catch(e) {
+						Importer.flush_localStorage()
+					}
+				}
 				Importer.requested_plots--
 				if (Importer.requested_plots == 0) Event.last_event = Glop.frame
 				$l("Total plots: "+Importer.plots.size()+", of which "+Importer.requested_plots+" are still loading.")
@@ -6682,7 +6690,6 @@ var Importer = {
 	}
 }
 
-Importer.flush_localstorage()
 document.observe('cartagen:init', Importer.init.bindAsEventListener(Importer))
 var Glop = {
 	frame: 0,
@@ -9196,6 +9203,32 @@ var Viewport = {
 		Viewport.bbox = [Map.y - Viewport.height / 2, Map.x - Viewport.width / 2, Map.y + Viewport.height / 2, Map.x + Viewport.width / 2]
 	}
 }
+var Pushpin = {
+	init: function() {
+		Glop.observe('cartagen:postdraw', this.draw.bindAsEventListener(this))
+	},
+	add: function(x, y) {
+		this.x = x
+		this.y = y
+	},
+	draw: function() {
+		var line_width = Math.max(1/Map.zoom,1)
+
+		$C.line_width(line_width)
+		$C.stroke_style('red')
+
+		var width = line_width*4
+		var height = width
+		$C.stroke_rect(this.x,
+					   this.y,
+					   width,
+					   height)
+	},
+
+	x: 0,
+	y: 0
+}
+document.observe('cartagen:init', Pushpin.init.bindAsEventListener(Pushpin))
 
 var Map = {
 	init: function() {

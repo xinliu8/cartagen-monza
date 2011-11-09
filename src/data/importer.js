@@ -32,19 +32,22 @@ var Importer = {
 		}
 		
 		try {
-			if (localStorage && localStorage.length && localStorage.getItem) {
+			//if (localStorage && localStorage.length && localStorage.getItem) {
+			if (localStorage) {
 				Importer.localStorage = true
 			}
 			else {
 				Importer.localStorage = false
 			}
+			// disable localstorage due to its limitation 2.5MB
+			Importer.localStorage = false
 		}
 		catch (e) {
 			Importer.localStorage = false
 		}
 	},
-	flush_localstorage: function() {
-		if (Importer.localStorage && !Config.suppress_interface && localStorage.length > 200) {
+	flush_localStorage: function() {
+		if (Importer.localStorage && !Config.suppress_interface) {
 			var answer = confirm('Your localStorage is filling up ('+localStorage.length+' entries) and may cause slowness in some browsers. Click OK to flush it and begin repopulating it from new data.')
 			if (answer) {
 				localStorage.clear()
@@ -170,14 +173,21 @@ var Importer = {
 		Importer.requested_plots++
 		var finished = false
 		var bbox = Geohash.bbox(key)
-		var req = new Ajax.Request('/api/0.6/map.json?bbox='+bbox[0]+","+bbox[3]+','+bbox[2]+','+bbox[1],{
-		//var req = new Ajax.Request('/api/0.6/geohash/'+key+'.json',{
+		//var req = new Ajax.Request('/api/0.6/map/bbox/'+bbox[0]+","+bbox[3]+','+bbox[2]+','+bbox[1] + '.json',{
+		//var req = new Ajax.Request('/api/0.6/map.json?bbox='+bbox[0]+","+bbox[3]+','+bbox[2]+','+bbox[1],{
+		var req = new Ajax.Request('/api/0.6/geohash/'+key+'.json',{
 			method: 'get',
 			onSuccess: function(result) {
 				finished = true
 				// $l('loaded '+_lat1+'&lng1='+_lng1+'&lat2='+_lat2+'&lng2='+_lng2)
 				Importer.parse_objects(Importer.parse(result.responseText), key)
-				if (Importer.localStorage) localStorage.setItem('geohash_'+key,result.responseText)
+				if (Importer.localStorage) {
+					try {
+						localStorage.setItem('geohash_'+key,result.responseText)
+					} catch(e) {
+						Importer.flush_localStorage()
+					}
+				}
 				Importer.requested_plots--
 				if (Importer.requested_plots == 0) Event.last_event = Glop.frame
 				$l("Total plots: "+Importer.plots.size()+", of which "+Importer.requested_plots+" are still loading.")
@@ -293,5 +303,4 @@ var Importer = {
 	}
 }
 
-Importer.flush_localstorage()
 document.observe('cartagen:init', Importer.init.bindAsEventListener(Importer))

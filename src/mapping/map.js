@@ -1,6 +1,7 @@
 //= require "geohash"
 //= require "projection"
 //= require "viewport"
+//= require "pushpin"
 
 /**
  * Stores data about the map and methods to manipulate it

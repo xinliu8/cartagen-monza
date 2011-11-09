@@ -128,9 +128,10 @@ var Cartagen = {
 	 */
 	setup: function(configs) {
 		$(document).observe('dom:loaded', function() {
-			$('canvas').insert('<canvas style="z-index:20;" id="main"></canvas>')
+			$('canvas').insert('<canvas id="main"></canvas>')
+			$('main').addClassName('cartagen')
 			Cartagen.initialize(configs)
-		})	
+		})
 	},
 	/**
 	 * Performs initialization tasks, mainly fetching map data. This should never be called directly,

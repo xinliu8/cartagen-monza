@@ -9,7 +9,7 @@ end
 desc "automatically builds cartagen.js when something in src/ changes"
 task :autobuild do
   build
-	require 'lib/filesystemwatcher'
+	require './lib/filesystemwatcher'
 	watcher = FileSystemWatcher.new
 	watcher.addDirectory 'src', '**/*.js'
 	watcher.sleepTime = 2

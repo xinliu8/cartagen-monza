@@ -1,4 +1,4 @@
-require "md5"
+require "digest/md5"
 require "thread"
 require File.dirname(__FILE__) + "/servicestate"
 
