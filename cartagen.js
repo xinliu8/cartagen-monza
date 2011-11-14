@@ -5091,6 +5091,7 @@ var Config = {
 	live_gss: false,
 	static_map: true,
 	static_map_layers: ["/static/rome/park.js"],
+	draw3d: false,
 	dynamic_layers: [],
 	lat: 41.89685,
 	lng: 12.49715,
@@ -5233,10 +5234,7 @@ var Cartagen = {
 			}
 		}
 
-			$C.translate(Glop.width / 2, Glop.height / 2)
-			        $C.rotate(Map.rotate)
-			        $C.scale(Map.zoom, Map.zoom)
-			        $C.translate(-Map.x,-Map.y)
+
 
 		Viewport.draw() //adjust viewport
 
@@ -5589,6 +5587,10 @@ $l = $D.log
 
 Math.in_range = function(v,r1,r2) {
 	return (v > Math.min(r1,r2) && v < Math.max(r1,r2))
+}
+
+Math.is_finite = function(v) {
+	return (v!= Number.POSITIVE_INFINITY && v != Number.NEGATIVE_INFINITY)
 }
 
 Object.value = function(obj, context) {
@@ -6081,14 +6083,27 @@ var Way = Class.create(Feature,
 		}
 
 		$C.begin_path()
-		if (Config.distort) $C.move_to(this.nodes[0].x,this.nodes[0].y+Math.max(0,75-Geometry.distance(this.nodes[0].x,this.nodes[0].y,Map.pointer_x(),Map.pointer_y())/4))
+
+		if( Config.draw3d) {
+			var point2d = Perspective.convert3d(this.nodes[0]);
+			if(Math.is_finite(point2d.x) && Math.is_finite(point2d.y)
+				&&point2d.x > 0 && point2d.y > 0) {
+				$C.move_to(point2d.x, point2d.y)
+			}
+		}
 		else $C.move_to(this.nodes[0].x,this.nodes[0].y)
 
 		if (Map.resolution == 0) Map.resolution = 1
 		this.nodes.each(function(node,index){
 			if ((index % Map.resolution == 0) || index == this.nodes.length-1 || this.nodes.length <= 30) {
-				if (Config.distort) $C.line_to(node.x,node.y+Math.max(0,75-Geometry.distance(node.x,node.y,Map.pointer_x(),Map.pointer_y())/4))
-				else $C.line_to(node.x,node.y)
+				if( Config.draw3d) {
+					var point2d = Perspective.convert3d(node);
+					if(Math.is_finite(point2d.x) && Math.is_finite(point2d.y)
+						&&point2d.x > 0 && point2d.y > 0) {
+						$C.line_to(point2d.x, point2d.y)
+					}
+				}
+				else $C.line_to(node.x, node.y)
 			}
 		},this)
 
@@ -9206,6 +9221,7 @@ var Viewport = {
 var Pushpin = {
 	init: function() {
 		Glop.observe('cartagen:postdraw', this.draw.bindAsEventListener(this))
+		this.radius = 10;
 	},
 	add: function(x, y) {
 		this.x = x
@@ -9215,14 +9231,29 @@ var Pushpin = {
 		var line_width = Math.max(1/Map.zoom,1)
 
 		$C.line_width(line_width)
-		$C.stroke_style('red')
+		/*$C.stroke_style('red')
 
 		var width = line_width*4
 		var height = width
 		$C.stroke_rect(this.x,
 					   this.y,
 					   width,
-					   height)
+					   height)*/
+
+		var pointToDraw = {x: this.x, y: this.y}
+		if( Config.draw3d) {
+			var point2d = Perspective.convert3d(pointToDraw);
+			pointToDraw = point2d;
+		}
+
+		$C.save()
+		$C.fill_style('red')
+		$C.begin_path()
+		$C.translate(pointToDraw.x, pointToDraw.y-this.radius)
+		$C.arc(0, this.radius, this.radius, 0, Math.PI*2, true)
+		$C.fill()
+		$C.stroke()
+		$C.restore()
 	},
 
 	x: 0,
@@ -9230,6 +9261,80 @@ var Pushpin = {
 }
 document.observe('cartagen:init', Pushpin.init.bindAsEventListener(Pushpin))
 
+var Perspective = {
+
+	convert3d_norotate: function (point) {
+		var bbox = Map.bbox;
+        var height = Projection.lat_to_y(bbox[1]) - Projection.lat_to_y(Map.bbox[3]);
+        var width = Projection.lon_to_x(bbox[2]) - Projection.lon_to_x(bbox[0]);
+        var center = {x: Map.x, y: Map.y - height};
+		var y = height;
+		var zoom = height*2;
+		var point3d = {x: point.x - Map.x, y: y, z: - point.y + Map.y + height*2};
+
+		var scale = zoom/point3d.z;
+		var x2d = (point3d.x * scale) + center.x;
+		var y2d = (point3d.y * scale) + center.y;
+		return {x: x2d, y:y2d};
+	},
+
+	convert3d: function (point) {
+		var cos = Math.cos
+		var sin = Math.sin
+		var tan = Math.tan
+
+		var d = {}
+
+		var alpha = - Map.rotate;
+		var height = Glop.height;
+		var r = 2000;
+
+		var screenDistRatio = 1/2;
+		var s = {x:  0, y: 0, z: -r*screenDistRatio}; // relative to c
+
+		x1 = point.x-(Map.x - r*sin(alpha))
+		y1 = point.y-(Map.y+r*cos(alpha))
+
+		d.x = cos(alpha)*x1 + sin(alpha) *y1
+		d.z = cos(alpha)*y1 - sin(alpha)*x1
+
+		d.y = -height
+
+		var point2d = {}
+
+		point2d.x = (d.x - s.x) * (s.z/d.z);
+		point2d.y = (d.y - s.y) * (s.z/d.z);
+
+		var canvasCenter = { x: Glop.width/2, y: 0};
+		point2d.x = point2d.x + canvasCenter.x;
+		point2d.y = - point2d.y + canvasCenter.y;
+
+		return point2d;
+	},
+
+	convert3d_general: function (point) {
+		var height = Projection.lat_to_y(Map.bbox[1]) - Projection.lat_to_y(Map.bbox[3]);
+        var center = {x: Map.x, y: Map.y - height};
+
+
+		var d = {}
+		var o = {x:Map.rotate, y:0, z:0}
+		var p = {x: point.x, y: height, z: - point.y + height*2};
+		var c = {x: Map.x, y: 0, z: - Map.y};
+		var s = {x:  0, y: 0, z: height*2};
+		var cos = Math.cos
+		var sin = Math.sin
+		d.x = cos(o.y) * (sin(o.z)*(p.y-c.y) + cos(o.z)*(p.x-c.x)) - sin(o.y) *(p.z-c.z)
+		d.y = sin(o.x) * (cos(o.y)*(p.z-c.z) + sin(o.y)*(sin(o.z)*(p.y-c.y) + cos(o.z)*(p.x-c.x))) + cos(o.x)*(cos(o.z)*(p.y-c.y) - sin(o.z)*(p.x-c.x))
+		d.z = cos(o.x) * ( cos(o.y)*(p.z-c.z) + sin(o.y)*(sin(o.z)*(p.y-c.y) + cos(o.z)*(p.x-c.x))) -sin(o.x)*(cos(o.z)*(p.y-c.y) - sin(o.z)*(p.x-c.x))
+
+		var point2d = {}
+		point2d.x = (d.x - s.x) * (s.z/d.z) + center.x;
+		point2d.y = (d.y - s.y) * (s.z/d.z) + center.y;
+
+		return point2d;
+	}
+}
 var Map = {
 	init: function() {
 		this.x = Projection.lon_to_x(Config.lng)

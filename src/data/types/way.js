@@ -212,15 +212,28 @@ var Way = Class.create(Feature,
 		}
 
 		$C.begin_path()
-		if (Config.distort) $C.move_to(this.nodes[0].x,this.nodes[0].y+Math.max(0,75-Geometry.distance(this.nodes[0].x,this.nodes[0].y,Map.pointer_x(),Map.pointer_y())/4))
+		//if (Config.distort) $C.move_to(this.nodes[0].x,this.nodes[0].y+Math.max(0,75-Geometry.distance(this.nodes[0].x,this.nodes[0].y,Map.pointer_x(),Map.pointer_y())/4))
+		
+		if( Config.draw3d) {
+			var point2d = Perspective.convert3d(this.nodes[0]);
+			if(Math.is_finite(point2d.x) && Math.is_finite(point2d.y)
+				&&point2d.x > 0 && point2d.y > 0) {
+				$C.move_to(point2d.x, point2d.y)
+			}
+		}
 		else $C.move_to(this.nodes[0].x,this.nodes[0].y)
 
 		if (Map.resolution == 0) Map.resolution = 1
 		this.nodes.each(function(node,index){
 			if ((index % Map.resolution == 0) || index == this.nodes.length-1 || this.nodes.length <= 30) {
-				// eye candy demo:
-				if (Config.distort) $C.line_to(node.x,node.y+Math.max(0,75-Geometry.distance(node.x,node.y,Map.pointer_x(),Map.pointer_y())/4))
-				else $C.line_to(node.x,node.y)
+				if( Config.draw3d) {
+					var point2d = Perspective.convert3d(node);
+					if(Math.is_finite(point2d.x) && Math.is_finite(point2d.y)
+						&&point2d.x > 0 && point2d.y > 0) {
+						$C.line_to(point2d.x, point2d.y)
+					}
+				}
+				else $C.line_to(node.x, node.y)
 			}
 		},this)
 

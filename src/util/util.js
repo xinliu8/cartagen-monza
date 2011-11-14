@@ -17,6 +17,10 @@ Math.in_range = function(v,r1,r2) {
 	return (v > Math.min(r1,r2) && v < Math.max(r1,r2))
 }
 
+Math.is_finite = function(v) {
+	return (v!= Number.POSITIVE_INFINITY && v != Number.NEGATIVE_INFINITY)
+}
+
 /**
  * Finds the value of the argument, evaluating it as a function if possible.
  * @param {Object} obj       Object to find value of

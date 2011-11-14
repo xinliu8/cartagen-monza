@@ -8,6 +8,7 @@ var Pushpin = {
 	 */
 	init: function() {
 		Glop.observe('cartagen:postdraw', this.draw.bindAsEventListener(this))
+		this.radius = 10;
 	},
 	/**
 	 * Initializes the map properties
@@ -23,14 +24,29 @@ var Pushpin = {
 		var line_width = Math.max(1/Map.zoom,1)
 		
 		$C.line_width(line_width)
-		$C.stroke_style('red')
+		/*$C.stroke_style('red')
 
 		var width = line_width*4
 		var height = width
 		$C.stroke_rect(this.x,
 					   this.y,
 					   width,
-					   height)
+					   height)*/
+		
+		var pointToDraw = {x: this.x, y: this.y}
+		if( Config.draw3d) {
+			var point2d = Perspective.convert3d(pointToDraw);
+			pointToDraw = point2d;
+		}
+		
+		$C.save()
+		$C.fill_style('red')
+		$C.begin_path()
+		$C.translate(pointToDraw.x, pointToDraw.y-this.radius)
+		$C.arc(0, this.radius, this.radius, 0, Math.PI*2, true)
+		$C.fill()
+		$C.stroke()
+		$C.restore()
 	},
 	
 	/**

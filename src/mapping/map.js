@@ -2,7 +2,7 @@
 //= require "projection"
 //= require "viewport"
 //= require "pushpin"
-
+//= require "perspective"
 /**
  * Stores data about the map and methods to manipulate it
  * @namespace 
