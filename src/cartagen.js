@@ -178,9 +178,8 @@ var Cartagen = {
 		
 		if (!Config.static_map) {
 			Importer.get_current_plot(true)
-			new PeriodicalExecuter(Glop.trigger_draw,3)
-			new PeriodicalExecuter(function() { Importer.get_current_plot(false) },3)
-			//window.setInterval(function() { Importer.get_current_plot(false) }, 3000)
+			new PeriodicalExecuter(Glop.trigger_draw,1)
+			new PeriodicalExecuter(function() { Importer.get_current_plot(false) },1)
 		} else {
 			Config.static_map_layers.each(function(layer_url) {
 				$l('fetching '+layer_url)

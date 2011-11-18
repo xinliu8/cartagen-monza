@@ -170,6 +170,9 @@ var Importer = {
 		// Importer.plot_array.push(Geohash.bbox(key))
 		$l('loading geohash plot: '+key)
 		
+		// profiling for the load_plot
+		var start_time = new Date().getTime()
+		
 		Importer.requested_plots++
 		var finished = false
 		var bbox = Geohash.bbox(key)
@@ -180,7 +183,15 @@ var Importer = {
 			onSuccess: function(result) {
 				finished = true
 				// $l('loaded '+_lat1+'&lng1='+_lng1+'&lat2='+_lat2+'&lng2='+_lng2)
-				Importer.parse_objects(Importer.parse(result.responseText), key)
+				var webcallDuration = new Date().getTime() - start_time
+				$l('Duration for retrieving data ' + key + ' is ' + webcallDuration.toString())
+				
+				start_time = new Date().getTime()
+				var parsedData = Importer.parse(result.responseText)
+				var parseDuration = new Date().getTime() - start_time
+				$l('Duration for parsing data ' + key + ' is ' + parseDuration.toString())
+				
+				Importer.parse_objects(parsedData, key)
 				if (Importer.localStorage) {
 					try {
 						localStorage.setItem('geohash_'+key,result.responseText)
@@ -212,22 +223,9 @@ var Importer = {
 		f.delay(120)
 	},
 	parse_node: function(node){
-		var n = new Node
-		n.name = node.name
-		n.author = node.author
-		n.img = node.img
-		n.h = 10
-		n.w = 10
-		n.color = Glop.random_color()
-		n.timestamp = node.timestamp
-		n.user = node.user
+		var n = new Node(node)
 		if (!Object.isUndefined(node.image)) $l('got image!!')
-		n.id = node.id
-		n.lat = node.lat
-		n.lon = node.lon
-		n.x = Projection.lon_to_x(n.lon)
-		n.y = Projection.lat_to_y(n.lat)
-		Style.parse_styles(n,Style.styles.node)
+		Style.parse_simple_styles(n,Style.styles.node)
 		// can't currently afford to have all nodes in the map as well as all ways.
 		// but we're missing some nodes when we render... semantic ones i think. cross-check.
 		// objects.push(n)
@@ -286,16 +284,31 @@ var Importer = {
 				return true
 			}
 		}
+		// profiling time-consuming tasks
+		var start_time = new Date().getTime()
+		
 		if (data.osm.node) {
-			node_task = new Task(data.osm.node, Importer.parse_node, cond)
-			Importer.parse_manager.add(node_task)
+			//node_task = new Task(data.osm.node, Importer.parse_node, cond)
+			//Importer.parse_manager.add(node_task)
+			for(var i=0;i<data.osm.node.length;i++) {
+				Importer.parse_node(data.osm.node[i])
+			}
 		}
+		
+		$l('Duration for parsing ' + data.osm.node.length.toString() + ' nodes is ' + (new Date().getTime() - start_time).toString())
+		start_time = new Date().getTime()
 		if (data.osm.way) {
-			way_task = new Task(data.osm.way, Importer.parse_way, cond, [node_task.id])
-			Importer.parse_manager.add(way_task)
+			//way_task = new Task(data.osm.way, Importer.parse_way, cond, [node_task.id])
+			//Importer.parse_manager.add(way_task)
+			for(var i=0;i<data.osm.way.length;i++) {
+				Importer.parse_way(data.osm.way[i])
+			}
 		}
-		coastline_task = new Task(['placeholder'], Coastline.refresh_coastlines, cond, [way_task.id])
-		Importer.parse_manager.add(coastline_task)
+		
+		$l('Duration for parsing ' + data.osm.way.length.toString() + ' ways is ' + (new Date().getTime() - start_time).toString())
+		
+		//coastline_task = new Task(['placeholder'], Coastline.refresh_coastlines, cond, [way_task.id])
+		//Importer.parse_manager.add(coastline_task)
 		// we should load relations -- scheduled for 0.8 rlease
 
 		// sort by polygons' node count:

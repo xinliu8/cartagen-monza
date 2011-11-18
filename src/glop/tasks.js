@@ -118,13 +118,16 @@ var Task = Class.create(
 		 *  If it has uncompleted deps, it does not run.
 		 */
 		this.deps = deps || []
+		
+		this.memberToExec = 0
 	},
 	exec_next: function() {
 		if (!this.should_run()) return true
 		
-		this.process(this.members.shift())
-		
-		if (this.members.length > 0) return true
+		//this.process(this.members.shift())
+		this.process(this.members[this.memberToExec])
+		this.memberToExec += 1
+		if (this.memberToExec < this.members.length) return true
 		else {
 			Task.complete(this.id)
 			return false

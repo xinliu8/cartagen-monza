@@ -14,8 +14,14 @@ var Node = Class.create(Feature,
 	 * Sets the default radius and invokes Feature#initialize
 	 * @constructs
 	 */
-	initialize: function($super) {
+	initialize: function($super, node) {
 		$super()
+		Object.extend(this, node)
+		this.h = 10
+		this.w = 10
+		this.x = Projection.lon_to_x(this.lon)
+		this.y = Projection.lat_to_y(this.lat)
+		this.color = Glop.random_color()
 	},
 	/**
 	 * invokes Feature#draw

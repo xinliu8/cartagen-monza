@@ -44,6 +44,13 @@ var Style = {
 		}
 		$C.close()
 	},
+	
+	/**
+	* This is a simpler parse without considering embedded tags and the value is not a function
+	*/
+	parse_simple_styles: function(feature, selector) {
+		Object.extend(feature, selector);
+	},
 	/**
 	 * Take styles from GSS and set appropriate properties of a feature
 	 * @param {Object} feature  Feature to set properties of
@@ -55,7 +62,8 @@ var Style = {
 			var val = null
 			if (selector) val = selector[property]
 
-			if (Style.styles[feature.name] && Style.styles[feature.name][property])
+			// node.name or way.name?
+			if (feature.name && Style.styles[feature.name] && Style.styles[feature.name][property])
 				val = this.extend_value(val, Style.styles[feature.name][property])
 
 			feature.tags.each(function(tag) {

@@ -5200,8 +5200,8 @@ var Cartagen = {
 
 		if (!Config.static_map) {
 			Importer.get_current_plot(true)
-			new PeriodicalExecuter(Glop.trigger_draw,3)
-			new PeriodicalExecuter(function() { Importer.get_current_plot(false) },3)
+			new PeriodicalExecuter(Glop.trigger_draw,1)
+			new PeriodicalExecuter(function() { Importer.get_current_plot(false) },1)
 		} else {
 			Config.static_map_layers.each(function(layer_url) {
 				$l('fetching '+layer_url)
@@ -5681,12 +5681,16 @@ var Style = {
 		}
 		$C.close()
 	},
+
+	parse_simple_styles: function(feature, selector) {
+		Object.extend(feature, selector);
+	},
 	parse_styles: function(feature,selector) {
 		(this.properties.concat(this.label_properties)).each(function(property) {
 			var val = null
 			if (selector) val = selector[property]
 
-			if (Style.styles[feature.name] && Style.styles[feature.name][property])
+			if (feature.name && Style.styles[feature.name] && Style.styles[feature.name][property])
 				val = this.extend_value(val, Style.styles[feature.name][property])
 
 			feature.tags.each(function(tag) {
@@ -5897,8 +5901,14 @@ Object.extend(Feature, {
 var Node = Class.create(Feature,
 {
 	__type__: 'Node',
-	initialize: function($super) {
+	initialize: function($super, node) {
 		$super()
+		Object.extend(this, node)
+		this.h = 10
+		this.w = 10
+		this.x = Projection.lon_to_x(this.lon)
+		this.y = Projection.lat_to_y(this.lat)
+		this.color = Glop.random_color()
 	},
 	draw: function($super) {
 		if (this.img && typeof this.img == 'string') {
@@ -6589,6 +6599,8 @@ var Importer = {
 	load_plot: function(key) {
 		$l('loading geohash plot: '+key)
 
+		var start_time = new Date().getTime()
+
 		Importer.requested_plots++
 		var finished = false
 		var bbox = Geohash.bbox(key)
@@ -6596,7 +6608,15 @@ var Importer = {
 			method: 'get',
 			onSuccess: function(result) {
 				finished = true
-				Importer.parse_objects(Importer.parse(result.responseText), key)
+				var webcallDuration = new Date().getTime() - start_time
+				$l('Duration for retrieving data ' + key + ' is ' + webcallDuration.toString())
+
+				start_time = new Date().getTime()
+				var parsedData = Importer.parse(result.responseText)
+				var parseDuration = new Date().getTime() - start_time
+				$l('Duration for parsing data ' + key + ' is ' + parseDuration.toString())
+
+				Importer.parse_objects(parsedData, key)
 				if (Importer.localStorage) {
 					try {
 						localStorage.setItem('geohash_'+key,result.responseText)
@@ -6626,22 +6646,9 @@ var Importer = {
 		f.delay(120)
 	},
 	parse_node: function(node){
-		var n = new Node
-		n.name = node.name
-		n.author = node.author
-		n.img = node.img
-		n.h = 10
-		n.w = 10
-		n.color = Glop.random_color()
-		n.timestamp = node.timestamp
-		n.user = node.user
+		var n = new Node(node)
 		if (!Object.isUndefined(node.image)) $l('got image!!')
-		n.id = node.id
-		n.lat = node.lat
-		n.lon = node.lon
-		n.x = Projection.lon_to_x(n.lon)
-		n.y = Projection.lat_to_y(n.lat)
-		Style.parse_styles(n,Style.styles.node)
+		Style.parse_simple_styles(n,Style.styles.node)
 		Feature.nodes.set(n.id,n)
 		if (node.display) {
 			n.display = true
@@ -6691,16 +6698,24 @@ var Importer = {
 				return true
 			}
 		}
+		var start_time = new Date().getTime()
+
 		if (data.osm.node) {
-			node_task = new Task(data.osm.node, Importer.parse_node, cond)
-			Importer.parse_manager.add(node_task)
+			for(var i=0;i<data.osm.node.length;i++) {
+				Importer.parse_node(data.osm.node[i])
+			}
 		}
+
+		$l('Duration for parsing ' + data.osm.node.length.toString() + ' nodes is ' + (new Date().getTime() - start_time).toString())
+		start_time = new Date().getTime()
 		if (data.osm.way) {
-			way_task = new Task(data.osm.way, Importer.parse_way, cond, [node_task.id])
-			Importer.parse_manager.add(way_task)
+			for(var i=0;i<data.osm.way.length;i++) {
+				Importer.parse_way(data.osm.way[i])
+			}
 		}
-		coastline_task = new Task(['placeholder'], Coastline.refresh_coastlines, cond, [way_task.id])
-		Importer.parse_manager.add(coastline_task)
+
+		$l('Duration for parsing ' + data.osm.way.length.toString() + ' ways is ' + (new Date().getTime() - start_time).toString())
+
 
 	}
 }
@@ -6881,13 +6896,15 @@ var Task = Class.create(
 
 		Task.register(this)
 		this.deps = deps || []
+
+		this.memberToExec = 0
 	},
 	exec_next: function() {
 		if (!this.should_run()) return true
 
-		this.process(this.members.shift())
-
-		if (this.members.length > 0) return true
+		this.process(this.members[this.memberToExec])
+		this.memberToExec += 1
+		if (this.memberToExec < this.members.length) return true
 		else {
 			Task.complete(this.id)
 			return false
