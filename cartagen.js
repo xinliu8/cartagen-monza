@@ -5235,6 +5235,12 @@ var Cartagen = {
 		}
 
 
+			if(!Config.draw3d) {
+				$C.translate(Glop.width / 2, Glop.height / 2)
+				$C.rotate(Map.rotate)
+				$C.scale(Map.zoom, Map.zoom)
+				$C.translate(-Map.x,-Map.y)
+			}
 
 		Viewport.draw() //adjust viewport
 
@@ -5506,60 +5512,32 @@ var Geometry = {
 }
 $D = {
 	enabled: false,
+
+	log: Prototype.emptyFunction,
+	info: Prototype.emptyFunction,
+	warn: Prototype.emptyFunction,
+	error: Prototype.emptyFunction,
+
 	enable: function() {
 		$D.enabled = true
-		if (console.firebug) {
-			$D.log = console.debug
-			$D.warn = console.warn
-			$D.err = console.error
-			$D.trace = console.trace
-			$D.verbose_trace = $D._verbose_trace
+		var methods = ['log', 'warn', 'error', 'info']
+
+		for(var i=0; i< methods.length;i++) {
+			var m = methods[i];
+			$D[m] = function(mesg) {
+				var curDate = new Date().toUTCString()
+				$('log').insert( '<p> ' + m + ': ' + curDate + ' mesg: ' + mesg + '</p>', { position: 'top' })
+			};
 		}
-		else {
-			$D.log = $D._log
-			$D.warn = $D._warn
-			$D.err = $D._err
-			$D.trace = $D._trace
-			$D.verbose_trace = $D._verbose_trace
-		}
+
 		$l = $D.log
 	},
 	disable: function() {
 		$D.enabled = false
 
-		(['log', 'warn', 'err', 'trace', 'verbose_trace']).each(function(m) {
+		(['log', 'warn', 'error', 'info']).each(function(m) {
 			$D[m] = Prototype.emptyFunction
 		})
-	},
-
-	log: Prototype.emptyFunction,
-
-	_log: function(msg) {
-		console.log(msg)
-	},
-
-	warn: Prototype.emptyFunction,
-
-	_warn: function(msg) {
-		console.warn(msg)
-	},
-
-	err: Prototype.emptyFunction,
-
-	_err: function(msg) {
-		console.err(msg)
-	},
-
-	trace: Prototype.emptyFunction,
-
-	_trace: function() {
-		console.trace()
-	},
-
-	verbose_trace: Prototype.emptyFunction,
-
-	_verbose_trace: function(msg) {
-		console.log("An exception occurred in the script. Error name: " + msg.name + ". Error description: " + msg.description + ". Error number: " + msg.number + ". Error message: " + msg.message + ". Line number: "+ msg.lineNumber)
 	},
 
 	object_count: function() {
@@ -6657,6 +6635,39 @@ var Importer = {
 			Geohash.put(n.lat, n.lon, n, 1)
 		}
 	},
+	parse_leg: function(way){
+		if (Config.live || !Feature.ways.get(way.id)) {
+			var data = {
+				id: way.id,
+				user: way.user,
+				timestamp: way.timestamp,
+				nodes: [],
+				tags: new Hash()
+			}
+			if (way.name) data.name = way.name
+
+			way.node.each(function(nd, index) {
+				if(!Feature.nodes.get(nd.id))
+					Importer.parse_node(nd)
+
+				var parsed_node = Feature.nodes.get(nd.id)
+				if (!Object.isUndefined(parsed_node))
+					data.nodes.push(parsed_node)
+			})
+            		if (way.tag){
+				if (way.tag instanceof Array) {
+					way.tag.each(function(tag) {
+						data.tags.set(tag.k,tag.v)
+						if (tag.v == 'coastline') data.coastline = true
+					})
+				} else {
+					data.tags.set(way.tag.k,way.tag.v)
+					if (way.tag.v == 'coastline') data.coastline = true
+				}
+			}
+			new Way(data)
+		}
+	},
 	parse_way: function(way){
 		if (Config.live || !Feature.ways.get(way.id)) {
 			var data = {
@@ -6704,18 +6715,25 @@ var Importer = {
 			for(var i=0;i<data.osm.node.length;i++) {
 				Importer.parse_node(data.osm.node[i])
 			}
+
+			$l('Duration for parsing ' + data.osm.node.length.toString() + ' nodes is ' + (new Date().getTime() - start_time).toString())
 		}
 
-		$l('Duration for parsing ' + data.osm.node.length.toString() + ' nodes is ' + (new Date().getTime() - start_time).toString())
+
 		start_time = new Date().getTime()
 		if (data.osm.way) {
 			for(var i=0;i<data.osm.way.length;i++) {
 				Importer.parse_way(data.osm.way[i])
 			}
+
+			$l('Duration for parsing ' + data.osm.way.length.toString() + ' ways is ' + (new Date().getTime() - start_time).toString())
 		}
 
-		$l('Duration for parsing ' + data.osm.way.length.toString() + ' ways is ' + (new Date().getTime() - start_time).toString())
-
+		if (data.osm.leg) {
+			for(var i=0;i<data.osm.leg.length;i++) {
+				Importer.parse_leg(data.osm.leg[i])
+			}
+		}
 
 	}
 }
@@ -7233,10 +7251,6 @@ document.observe('cartagen:init', Events.init)
 
 $C = {
 	init: function() {
-		$('canvas').style.position = 'relative'
-		$('main').style.position = 'absolute'
-		$('main').style.top = 0
-		$('main').style.left = 0
 		$('canvas').onselectstart = function() {return false}
 		this.canvas =  $('main').getContext('2d')
 		this.element = $('main')
@@ -8001,7 +8015,6 @@ document.observe('cartagen:init', ContextMenu.init.bindAsEventListener(ContextMe
 var Zoom = {
 	initialize: function() {
 		Zoom.interval = 1.3
-		$$('body')[0].insert("<div id='cartagen-controls'><style>#cartagen-controls { display:block;height:60px;width:30px;position:absolute;top:"+(18+(-1*Config.padding_top))+"px;right:8px;z-index:200; }#cartagen-controls a { display:block;height:30px;width:30px;text-decoration:none;text-align:center;color:white;background:#222;font-size:24px;font-style:bold;font-family:arial,sans-serif; }#cartagen-controls a:hover { background:#444; }#cartagen-controls a:active { background:#666; }</style><a href='javascript:void();' onClick='Map.zoom = Map.zoom*Zoom.interval;map.zoomIn()'>+</a><a href='javascript:void();' onClick='Map.zoom = Map.zoom*(1/1.3);map.zoomOut()'>-</a></div>")
 	},
 }
 
@@ -8861,7 +8874,6 @@ var Interface = {
 
 	display_loading_message: function(percent) {
 		if (Config.vectors) {
-	  		$$('body')[0].insert('<div onClick="$(\'loading_message\').hide();" id="loading_message" style="position:absolute;z-index:20;top:25%;width:100%;text-align:center;-webkit-user-select:none;-moz-user-select:none;"><div style="width:200px;margin:auto;background:rgba(255,255,255,0.8);font-family:Lucida Grande,Lucida Sans Console,Georgia,sans-serif;font-size:16px;padding:14px;-moz-border-radius:10px;-webkit-border-radius:10px;"><p><img src="images/spinner.gif" style="margin-bottom:12px;" /><br />Loading map data...<p><small>(Use arrow keys and +/- to pan and zoom)</small></p></div></div>')
 		}
 	},
 
@@ -8900,7 +8912,9 @@ Object.extend(Geohash, {
 		}
 	},
 	put: function(lat,lon,feature,length) {
-		if (!length) length = this.default_length
+
+		length = this.default_length
+
 		var key = this.get_key(lat,lon,length)
 
 		var merge_hash = this.hash.get(key)
@@ -9190,7 +9204,7 @@ var Projection = {
 		    return y;
 		},
 		y_to_lat: function(y) {
-			$D.err('y_to_lat is not supported in elliptical mercator')
+			$D.error('y_to_lat is not supported in elliptical mercator')
 		}
 
 	}
@@ -9236,6 +9250,8 @@ var Viewport = {
 	}
 }
 var Pushpin = {
+
+	enable: false,
 	init: function() {
 		Glop.observe('cartagen:postdraw', this.draw.bindAsEventListener(this))
 		this.radius = 10;
@@ -9243,8 +9259,12 @@ var Pushpin = {
 	add: function(x, y) {
 		this.x = x
 		this.y = y
+		this.enable = true
 	},
 	draw: function() {
+		if(this.enable == false)
+			return
+
 		var line_width = Math.max(1/Map.zoom,1)
 
 		$C.line_width(line_width)

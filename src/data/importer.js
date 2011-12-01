@@ -237,6 +237,39 @@ var Importer = {
 			Geohash.put(n.lat, n.lon, n, 1)
 		}
 	},
+	parse_leg: function(way){
+		if (Config.live || !Feature.ways.get(way.id)) {
+			var data = {
+				id: way.id,
+				user: way.user,
+				timestamp: way.timestamp,
+				nodes: [],
+				tags: new Hash()
+			}
+			if (way.name) data.name = way.name
+				
+			way.node.each(function(nd, index) {
+				if(!Feature.nodes.get(nd.id))
+					Importer.parse_node(nd)
+				
+				var parsed_node = Feature.nodes.get(nd.id)
+				if (!Object.isUndefined(parsed_node)) 
+					data.nodes.push(parsed_node)
+			})
+            		if (way.tag){
+				if (way.tag instanceof Array) {
+					way.tag.each(function(tag) {
+						data.tags.set(tag.k,tag.v)
+						if (tag.v == 'coastline') data.coastline = true
+					})
+				} else {
+					data.tags.set(way.tag.k,way.tag.v)
+					if (way.tag.v == 'coastline') data.coastline = true
+				}
+			}
+			new Way(data)
+		}
+	},
 	parse_way: function(way){
 		if (Config.live || !Feature.ways.get(way.id)) {
 			var data = {
@@ -293,9 +326,11 @@ var Importer = {
 			for(var i=0;i<data.osm.node.length;i++) {
 				Importer.parse_node(data.osm.node[i])
 			}
+			
+			$l('Duration for parsing ' + data.osm.node.length.toString() + ' nodes is ' + (new Date().getTime() - start_time).toString())
 		}
 		
-		$l('Duration for parsing ' + data.osm.node.length.toString() + ' nodes is ' + (new Date().getTime() - start_time).toString())
+		
 		start_time = new Date().getTime()
 		if (data.osm.way) {
 			//way_task = new Task(data.osm.way, Importer.parse_way, cond, [node_task.id])
@@ -303,10 +338,15 @@ var Importer = {
 			for(var i=0;i<data.osm.way.length;i++) {
 				Importer.parse_way(data.osm.way[i])
 			}
+			
+			$l('Duration for parsing ' + data.osm.way.length.toString() + ' ways is ' + (new Date().getTime() - start_time).toString())
 		}
 		
-		$l('Duration for parsing ' + data.osm.way.length.toString() + ' ways is ' + (new Date().getTime() - start_time).toString())
-		
+		if (data.osm.leg) {
+			for(var i=0;i<data.osm.leg.length;i++) {
+				Importer.parse_leg(data.osm.leg[i])
+			}
+		}
 		//coastline_task = new Task(['placeholder'], Coastline.refresh_coastlines, cond, [way_task.id])
 		//Importer.parse_manager.add(coastline_task)
 		// we should load relations -- scheduled for 0.8 rlease

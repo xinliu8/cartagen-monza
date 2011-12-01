@@ -229,10 +229,12 @@ var Cartagen = {
 		// 	$C.open(canvas)
 			
 			// will do the transform for 3d specifically
-			//$C.translate(Glop.width / 2, Glop.height / 2)
-			//$C.rotate(Map.rotate)
-			//$C.scale(Map.zoom, Map.zoom)
-			//$C.translate(-Map.x,-Map.y)
+			if(!Config.draw3d) {
+				$C.translate(Glop.width / 2, Glop.height / 2)
+				$C.rotate(Map.rotate)
+				$C.scale(Map.zoom, Map.zoom)
+				$C.translate(-Map.x,-Map.y)
+			}
 		// })
 		// 
 		// $C.close()

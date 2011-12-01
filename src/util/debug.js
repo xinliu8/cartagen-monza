@@ -13,25 +13,27 @@ $D = {
 	 * @type Boolean
 	 */
 	enabled: false,
+	
+	log: Prototype.emptyFunction,
+	info: Prototype.emptyFunction,
+	warn: Prototype.emptyFunction,
+	error: Prototype.emptyFunction,
+	
 	/**
 	 * Enables $D's methods
 	 */
 	enable: function() {
 		$D.enabled = true
-		if (console.firebug) {
-			$D.log = console.debug
-			$D.warn = console.warn
-			$D.err = console.error
-			$D.trace = console.trace
-			$D.verbose_trace = $D._verbose_trace
+		var methods = ['log', 'warn', 'error', 'info']
+		
+		for(var i=0; i< methods.length;i++) {
+			var m = methods[i];
+			$D[m] = function(mesg) { 
+				var curDate = new Date().toUTCString()
+				$('log').insert( '<p> ' + m + ': ' + curDate + ' mesg: ' + mesg + '</p>', { position: 'top' })
+			};
 		}
-		else {
-			$D.log = $D._log
-			$D.warn = $D._warn
-			$D.err = $D._err
-			$D.trace = $D._trace
-			$D.verbose_trace = $D._verbose_trace
-		}
+		
 		$l = $D.log
 	},
 	/**
@@ -40,65 +42,11 @@ $D = {
 	disable: function() {
 		$D.enabled = false
 		
-		(['log', 'warn', 'err', 'trace', 'verbose_trace']).each(function(m) {
+		(['log', 'warn', 'error', 'info']).each(function(m) {
 			$D[m] = Prototype.emptyFunction
 		})
 	},
 
-	/**
-	 * @function
-	 * Logs to the console. In firebug, links to the line number from which the
-	 * call was made. Also available as $l.
-	 * @param {Object} msg Object to log
-	 */
-	log: Prototype.emptyFunction,
-	
-	_log: function(msg) {
-		console.log(msg)
-	},
-	
-	/**
-	 * @function
-	 * Sends a warning to the console.
-	 * @param {Object} msg Object to send with warning
-	 */
-	warn: Prototype.emptyFunction,
-	
-	_warn: function(msg) {
-		console.warn(msg)
-	},
-	
-	/**
-	 * @function
-	 * Sends a error to the console.
-	 * @param {Object} msg Object to send with error
-	 */
-	err: Prototype.emptyFunction,
-	
-	_err: function(msg) {
-		console.err(msg)
-	},
-	
-	/**
-	 * @function
-	 * Sends a stack trace to the console.
-	 */
-	trace: Prototype.emptyFunction,
-	
-	_trace: function() {
-		console.trace()
-	},
-	
-	/**
-	 * @function
-	 * Sends a descriptive stack trace to the console.
-	 */
-	verbose_trace: Prototype.emptyFunction,
-	
-	_verbose_trace: function(msg) {
-		console.log("An exception occurred in the script. Error name: " + msg.name + ". Error description: " + msg.description + ". Error number: " + msg.number + ". Error message: " + msg.message + ". Line number: "+ msg.lineNumber)
-	},
-	
 	object_count: function() {
 		return $D.node_count() + $D.way_count() + $D.relation_count()
 	},

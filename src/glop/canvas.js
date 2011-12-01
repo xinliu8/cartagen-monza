@@ -13,10 +13,10 @@ $C = {
 		 * The 2d rendering context of the canvas
 		 * @type CanvasRenderingContext2D
 		 */
-		$('canvas').style.position = 'relative'
-		$('main').style.position = 'absolute'
-		$('main').style.top = 0
-		$('main').style.left = 0
+		//$('canvas').style.position = 'relative'
+		//$('main').style.position = 'absolute'
+		//$('main').style.top = 0
+		//$('main').style.left = 0
 		$('canvas').onselectstart = function() {return false}
 		this.canvas =  $('main').getContext('2d')
 		this.element = $('main')

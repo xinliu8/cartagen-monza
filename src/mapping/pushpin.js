@@ -3,12 +3,14 @@
  * @namespace 
  */
 var Pushpin = {
+	
+	enable: false,
 	/**
 	 * Initializes the map properties
 	 */
 	init: function() {
 		Glop.observe('cartagen:postdraw', this.draw.bindAsEventListener(this))
-		this.radius = 10;
+		this.radius = 5;
 	},
 	/**
 	 * Initializes the map properties
@@ -16,11 +18,15 @@ var Pushpin = {
 	add: function(x, y) {
 		this.x = x
 		this.y = y
+		this.enable = true
 	},
 	/**
 	 * Updates the map properties. Runs every frame.
 	 */
 	draw: function() {
+		if(this.enable == false)
+			return
+			
 		var line_width = Math.max(1/Map.zoom,1)
 		
 		$C.line_width(line_width)

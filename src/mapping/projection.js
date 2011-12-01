@@ -78,7 +78,7 @@ var Projection = {
 		    return y;
 		},
 		y_to_lat: function(y) {
-			$D.err('y_to_lat is not supported in elliptical mercator')
+			$D.error('y_to_lat is not supported in elliptical mercator')
 		}
 		
 	}
