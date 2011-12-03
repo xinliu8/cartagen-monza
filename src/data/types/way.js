@@ -17,7 +17,9 @@ var Way = Class.create(Feature,
 	 */
     initialize: function($super, data) {
 		$super()
-		geohash = geohash || true
+		
+		// what's the use of this?
+		//geohash = geohash || true
 		/**
 		 * Number of frames this Way has existed for
 		 * @type Number

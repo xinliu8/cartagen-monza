@@ -128,8 +128,13 @@ var Cartagen = {
 	 */
 	setup: function(configs) {
 		$(document).observe('dom:loaded', function() {
-			$('canvas').insert('<canvas id="main"></canvas>')
+			$('canvas').insert('<canvas id="main" style="position:absolute;width:100%;height:100%;z-index:1"></canvas>')
 			$('main').addClassName('cartagen')
+			
+			// static pin for now
+			$('canvas').insert('<canvas id="pin" style="position:absolute;width:10px;height:10px;z-index:2"></canvas>')
+			$('pin').addClassName('pincanvas')
+			Cartagen.pin = new Pushpin(5)
 			Cartagen.initialize(configs)
 		})
 	},

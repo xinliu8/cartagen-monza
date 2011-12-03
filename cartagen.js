@@ -5096,7 +5096,7 @@ var Config = {
 	lat: 41.89685,
 	lng: 12.49715,
 	fullscreen: false,
-	debug: false,
+	debug: Prototype.emptyFunction,
 	load_user_features: false,
 	aliases: $H({
 		stylesheet: ['gss'],
@@ -5104,8 +5104,7 @@ var Config = {
 	}),
 	handlers: $H({
 		debug: function(value) {
-			$D.enable()
-			Geohash.grid = true
+			$D.set(value)
 		},
 		grid: function(value) {
 			Geohash.grid = true
@@ -5171,8 +5170,12 @@ var Cartagen = {
 	scripts: [],
 	setup: function(configs) {
 		$(document).observe('dom:loaded', function() {
-			$('canvas').insert('<canvas id="main"></canvas>')
+			$('canvas').insert('<canvas id="main" style="position:absolute;width:100%;height:100%;z-index:1"></canvas>')
 			$('main').addClassName('cartagen')
+
+			$('canvas').insert('<canvas id="pin" style="position:absolute;width:10px;height:10px;z-index:2"></canvas>')
+			$('pin').addClassName('pincanvas')
+			Cartagen.pin = new Pushpin(5)
 			Cartagen.initialize(configs)
 		})
 	},
@@ -5514,31 +5517,11 @@ $D = {
 	enabled: false,
 
 	log: Prototype.emptyFunction,
-	info: Prototype.emptyFunction,
-	warn: Prototype.emptyFunction,
-	error: Prototype.emptyFunction,
-
-	enable: function() {
-		$D.enabled = true
-		var methods = ['log', 'warn', 'error', 'info']
-
-		for(var i=0; i< methods.length;i++) {
-			var m = methods[i];
-			$D[m] = function(mesg) {
-				var curDate = new Date().toUTCString()
-				$('log').insert( '<p> ' + m + ': ' + curDate + ' mesg: ' + mesg + '</p>', { position: 'top' })
-			};
-		}
-
+	set: function(input_debugger) {
+		$D.log = input_debugger.log
 		$l = $D.log
 	},
-	disable: function() {
-		$D.enabled = false
 
-		(['log', 'warn', 'error', 'info']).each(function(m) {
-			$D[m] = Prototype.emptyFunction
-		})
-	},
 
 	object_count: function() {
 		return $D.node_count() + $D.way_count() + $D.relation_count()
@@ -5931,7 +5914,7 @@ var Way = Class.create(Feature,
 	__type__: 'Way',
     initialize: function($super, data) {
 		$super()
-		geohash = geohash || true
+
 		this.age = 0
 		this.birthdate = new Date
 		this.highlight = false
@@ -9249,54 +9232,46 @@ var Viewport = {
 		Viewport.bbox = [Map.y - Viewport.height / 2, Map.x - Viewport.width / 2, Map.y + Viewport.height / 2, Map.x + Viewport.width / 2]
 	}
 }
-var Pushpin = {
+var Pushpin = Class.create({
 
-	enable: false,
-	init: function() {
-		Glop.observe('cartagen:postdraw', this.draw.bindAsEventListener(this))
-		this.radius = 10;
+	initialize: function(radius) {
+		this.radius = radius;
+
+		this.canvas = $('pin')
+		this.ctx = this.canvas.getContext("2d")
+		this.draw()
 	},
-	add: function(x, y) {
-		this.x = x
-		this.y = y
-		this.enable = true
-	},
+
 	draw: function() {
-		if(this.enable == false)
-			return
+		var ctx = this.ctx
+		ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+		ctx.fillStyle = "red";
+		ctx.beginPath();
+		ctx.arc(this.radius, this.radius, this.radius, 0, Math.PI*2, true)
+		ctx.closePath();
+		ctx.fill();
+	},
+	move: function(x, y) {
 
-		var line_width = Math.max(1/Map.zoom,1)
-
-		$C.line_width(line_width)
-		/*$C.stroke_style('red')
-
-		var width = line_width*4
-		var height = width
-		$C.stroke_rect(this.x,
-					   this.y,
-					   width,
-					   height)*/
-
-		var pointToDraw = {x: this.x, y: this.y}
+		var posToDraw = {x: x, y: y}
 		if( Config.draw3d) {
-			var point2d = Perspective.convert3d(pointToDraw);
-			pointToDraw = point2d;
+			var point2d = Perspective.convert3d(posToDraw);
+			posToDraw = point2d;
 		}
 
+
 		$C.save()
+		$C.line_width(1)
+		$C.stroke_style('yellow')
 		$C.fill_style('red')
 		$C.begin_path()
-		$C.translate(pointToDraw.x, pointToDraw.y-this.radius)
-		$C.arc(0, this.radius, this.radius, 0, Math.PI*2, true)
+		$C.translate(posToDraw.x, posToDraw.y)
+		$C.arc(0, 0, this.radius, 0, Math.PI*2, true)
 		$C.fill()
 		$C.stroke()
 		$C.restore()
-	},
-
-	x: 0,
-	y: 0
-}
-document.observe('cartagen:init', Pushpin.init.bindAsEventListener(Pushpin))
+	}
+})
 
 var Perspective = {
 
@@ -9323,10 +9298,12 @@ var Perspective = {
 		var d = {}
 
 		var alpha = - Map.rotate;
-		var height = Glop.height;
-		var r = 2000;
 
-		var screenDistRatio = 1/2;
+		var height = Glop.height/2;
+
+		var r = Glop.height/2;
+		var screenDistRatio = 1.5;
+
 		var s = {x:  0, y: 0, z: -r*screenDistRatio}; // relative to c
 
 		x1 = point.x-(Map.x - r*sin(alpha))

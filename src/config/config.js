@@ -21,7 +21,7 @@ var Config = {
 	lat: 41.89685,
 	lng: 12.49715,
 	fullscreen: false,
-	debug: false,
+	debug: Prototype.emptyFunction,
 	load_user_features: false,
 	aliases: $H({
 		stylesheet: ['gss'],
@@ -29,8 +29,7 @@ var Config = {
 	}),
 	handlers: $H({
 		debug: function(value) {
-			$D.enable()
-			Geohash.grid = true
+			$D.set(value)
 		},
 		grid: function(value) {
 			Geohash.grid = true

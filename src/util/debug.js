@@ -15,13 +15,14 @@ $D = {
 	enabled: false,
 	
 	log: Prototype.emptyFunction,
-	info: Prototype.emptyFunction,
-	warn: Prototype.emptyFunction,
-	error: Prototype.emptyFunction,
+	set: function(input_debugger) {
+		$D.log = input_debugger.log
+		$l = $D.log
+	},
 	
 	/**
 	 * Enables $D's methods
-	 */
+
 	enable: function() {
 		$D.enabled = true
 		var methods = ['log', 'warn', 'error', 'info']
@@ -36,16 +37,14 @@ $D = {
 		
 		$l = $D.log
 	},
-	/**
-	 * Disables $D's methods
-	 */
+
 	disable: function() {
 		$D.enabled = false
 		
 		(['log', 'warn', 'error', 'info']).each(function(m) {
 			$D[m] = Prototype.emptyFunction
 		})
-	},
+	},*/
 
 	object_count: function() {
 		return $D.node_count() + $D.way_count() + $D.relation_count()
