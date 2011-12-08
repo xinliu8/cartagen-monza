@@ -237,7 +237,7 @@ var Importer = {
 			Geohash.put(n.lat, n.lon, n, 1)
 		}
 	},
-	parse_leg: function(way){
+	parse_lightway: function(way){
 		if (Config.live || !Feature.ways.get(way.id)) {
 			var data = {
 				id: way.id,
@@ -336,17 +336,12 @@ var Importer = {
 			//way_task = new Task(data.osm.way, Importer.parse_way, cond, [node_task.id])
 			//Importer.parse_manager.add(way_task)
 			for(var i=0;i<data.osm.way.length;i++) {
-				Importer.parse_way(data.osm.way[i])
+				Importer.parse_lightway(data.osm.way[i])
 			}
 			
 			$l('Duration for parsing ' + data.osm.way.length.toString() + ' ways is ' + (new Date().getTime() - start_time).toString())
 		}
 		
-		if (data.osm.leg) {
-			for(var i=0;i<data.osm.leg.length;i++) {
-				Importer.parse_leg(data.osm.leg[i])
-			}
-		}
 		//coastline_task = new Task(['placeholder'], Coastline.refresh_coastlines, cond, [way_task.id])
 		//Importer.parse_manager.add(coastline_task)
 		// we should load relations -- scheduled for 0.8 rlease

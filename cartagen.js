@@ -6618,7 +6618,7 @@ var Importer = {
 			Geohash.put(n.lat, n.lon, n, 1)
 		}
 	},
-	parse_leg: function(way){
+	parse_lightway: function(way){
 		if (Config.live || !Feature.ways.get(way.id)) {
 			var data = {
 				id: way.id,
@@ -6706,17 +6706,12 @@ var Importer = {
 		start_time = new Date().getTime()
 		if (data.osm.way) {
 			for(var i=0;i<data.osm.way.length;i++) {
-				Importer.parse_way(data.osm.way[i])
+				Importer.parse_lightway(data.osm.way[i])
 			}
 
 			$l('Duration for parsing ' + data.osm.way.length.toString() + ' ways is ' + (new Date().getTime() - start_time).toString())
 		}
 
-		if (data.osm.leg) {
-			for(var i=0;i<data.osm.leg.length;i++) {
-				Importer.parse_leg(data.osm.leg[i])
-			}
-		}
 
 	}
 }
@@ -8895,8 +8890,8 @@ Object.extend(Geohash, {
 		}
 	},
 	put: function(lat,lon,feature,length) {
+		if (!length) length = this.default_length
 
-		length = this.default_length
 
 		var key = this.get_key(lat,lon,length)
 

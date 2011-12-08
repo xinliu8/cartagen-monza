@@ -83,10 +83,10 @@ Object.extend(Geohash, {
 	 * @see Geohash.put_object
 	 */
 	put: function(lat,lon,feature,length) {
-		//if (!length) length = this.default_length
+		if (!length) length = this.default_length
 		
 		// disable smart zooming based on length for now
-		length = this.default_length
+		//length = this.default_length
 		
 		var key = this.get_key(lat,lon,length)
 		
