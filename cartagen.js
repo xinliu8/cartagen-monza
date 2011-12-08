@@ -6709,7 +6709,6 @@ var Importer = {
 				Importer.parse_lightway(data.osm.way[i])
 			}
 
-			$l('Duration for parsing ' + data.osm.way.length.toString() + ' ways is ' + (new Date().getTime() - start_time).toString())
 		}
 
 
@@ -8810,7 +8809,6 @@ var Interface = {
 		if (Config.vectors) {
 			var percent = Importer.parse_manager.completed
 			if (percent > 75 || (percent < 100)) {
-				$('loading_message').hide()
 			}
 			if (percent < 100) {
 				$C.save()

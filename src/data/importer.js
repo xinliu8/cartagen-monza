@@ -333,13 +333,14 @@ var Importer = {
 		
 		start_time = new Date().getTime()
 		if (data.osm.way) {
-			//way_task = new Task(data.osm.way, Importer.parse_way, cond, [node_task.id])
+			//var way_task = new Task(data.osm.way, Importer.parse_way, cond, [node_task.id])
+			//var way_task = new Task(data.osm.way, Importer.parse_lightway, cond)
 			//Importer.parse_manager.add(way_task)
 			for(var i=0;i<data.osm.way.length;i++) {
 				Importer.parse_lightway(data.osm.way[i])
 			}
 			
-			$l('Duration for parsing ' + data.osm.way.length.toString() + ' ways is ' + (new Date().getTime() - start_time).toString())
+			//$l('Duration for parsing ' + data.osm.way.length.toString() + ' ways is ' + (new Date().getTime() - start_time).toString())
 		}
 		
 		//coastline_task = new Task(['placeholder'], Coastline.refresh_coastlines, cond, [way_task.id])

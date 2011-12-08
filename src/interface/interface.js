@@ -87,7 +87,7 @@ var Interface = {
 		if (Config.vectors) {
 			var percent = Importer.parse_manager.completed
 			if (percent > 75 || (percent < 100)) {
-				$('loading_message').hide()
+				//$('loading_message').hide()
 			}
 			if (percent < 100) {
 				$C.save()
