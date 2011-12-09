@@ -47,7 +47,7 @@ var Label = Class.create(
 		 * Color of the text
 		 * @type String
 		 */
-	    this.fontColor = '#eee',
+	    this.fontColor = 'white',
 		/**
 		 * Angle, in radians (relative to the +x axis), to rotate this label by.
 		 * Set to "fixed" to rotate with the map.
@@ -103,6 +103,15 @@ var Label = Class.create(
 			                            height,
 			                            Object.value(this.text, this.owner))
 
+			// for 3d
+			var posToDraw = {x: x, y: y}
+			if( Config.draw3d) {
+				var point2d = Perspective.convert3d(posToDraw);
+				x = point2d.x;
+				y = point2d.y;
+			}
+			
+			this.fontBackground = null
 			if (this.fontBackground) {
 				$C.fill_style(this.fontBackground)
 				$C.rect(x - (width + padding)/2, 
@@ -111,6 +120,7 @@ var Label = Class.create(
 				        height + padding)
 			}
 			
+			this.fontColor = 'white'
 			$C.draw_text(this.fontFamily,
 			             height,
 						 this.fontColor,

@@ -6213,7 +6213,7 @@ var Label = Class.create(
 	    this.text = null,
 	    this.fontScale = false,
 	    this.padding = 6,
-	    this.fontColor = '#eee',
+	    this.fontColor = 'white',
 		this.fontRotation = 0,
         this.owner = owner
     },
@@ -6248,6 +6248,14 @@ var Label = Class.create(
 			                            height,
 			                            Object.value(this.text, this.owner))
 
+			var posToDraw = {x: x, y: y}
+			if( Config.draw3d) {
+				var point2d = Perspective.convert3d(posToDraw);
+				x = point2d.x;
+				y = point2d.y;
+			}
+
+			this.fontBackground = null
 			if (this.fontBackground) {
 				$C.fill_style(this.fontBackground)
 				$C.rect(x - (width + padding)/2,
@@ -6256,6 +6264,7 @@ var Label = Class.create(
 				        height + padding)
 			}
 
+			this.fontColor = 'white'
 			$C.draw_text(this.fontFamily,
 			             height,
 						 this.fontColor,
@@ -8890,6 +8899,7 @@ Object.extend(Geohash, {
 	put: function(lat,lon,feature,length) {
 		if (!length) length = this.default_length
 
+		length = this.default_length
 
 		var key = this.get_key(lat,lon,length)
 
@@ -9107,11 +9117,29 @@ Object.extend(Geohash, {
 
 
 
-		var features;
+
+
 		this.keys.keys().each(function(key) {
-				features = this.get_from_key(key)
-				this.object_hash.set(key, features)
-				this.objects = features.concat(this.objects)
+				var features = this.get_from_key(key)
+				var filteredFeatures = [];
+				var k=0;
+				for(var i=0;i<features.length;i++) {
+					if(features[i].bbox) {
+						var topleft = {x: features[i].bbox[1], y: features[i].bbox[0]}
+						var bottomRight = {x: features[i].bbox[3], y: features[i].bbox[2]}
+						topleft = Perspective.convert3d(topleft)
+						bottomRight = Perspective.convert3d(bottomRight)
+						if(topleft.y > Glop.height/4 || bottomRight.y > Glop.height/4) {
+							filteredFeatures[k] = features[i]
+							k += 1
+						}
+					} else {
+						filteredFeatures[k] = features[i]
+						k += 1
+					}
+				}
+				this.object_hash.set(key, filteredFeatures)
+				this.objects = filteredFeatures.concat(this.objects)
 		}, this)
 
 		this.sort_objects()

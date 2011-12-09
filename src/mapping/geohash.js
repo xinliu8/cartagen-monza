@@ -86,7 +86,7 @@ Object.extend(Geohash, {
 		if (!length) length = this.default_length
 		
 		// disable smart zooming based on length for now
-		//length = this.default_length
+		length = this.default_length
 		
 		var key = this.get_key(lat,lon,length)
 		
@@ -446,11 +446,36 @@ Object.extend(Geohash, {
 //				}
 //			}
 //		}
-		var features;
+		
+		//var features;
+		//this.keys.keys().each(function(key) {
+		//		features = this.get_from_key(key)
+		//		this.object_hash.set(key, features)
+		//		this.objects = features.concat(this.objects)
+		//}, this)
+		
+		// filter far away features
 		this.keys.keys().each(function(key) {
-				features = this.get_from_key(key)
-				this.object_hash.set(key, features)
-				this.objects = features.concat(this.objects)
+				var features = this.get_from_key(key)
+				var filteredFeatures = [];
+				var k=0;
+				for(var i=0;i<features.length;i++) {
+					if(features[i].bbox) {
+						var topleft = {x: features[i].bbox[1], y: features[i].bbox[0]}
+						var bottomRight = {x: features[i].bbox[3], y: features[i].bbox[2]}
+						topleft = Perspective.convert3d(topleft)
+						bottomRight = Perspective.convert3d(bottomRight)
+						if(topleft.y > Glop.height/4 || bottomRight.y > Glop.height/4) {
+							filteredFeatures[k] = features[i]
+							k += 1
+						}
+					} else {
+						filteredFeatures[k] = features[i]
+						k += 1
+					}
+				}
+				this.object_hash.set(key, filteredFeatures)
+				this.objects = filteredFeatures.concat(this.objects)
 		}, this)
 		
 		this.sort_objects()
