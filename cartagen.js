@@ -5169,7 +5169,6 @@ var Cartagen = {
 	feature_queue: [],
 	scripts: [],
 	setup: function(configs) {
-		$(document).observe('dom:loaded', function() {
 			$('canvas').insert('<canvas id="main" style="position:absolute;width:100%;height:100%;z-index:1"></canvas>')
 			$('main').addClassName('cartagen')
 
@@ -5177,7 +5176,6 @@ var Cartagen = {
 			$('pin').addClassName('pincanvas')
 			Cartagen.pin = new Pushpin(5)
 			Cartagen.initialize(configs)
-		})
 	},
 	initialize: function(configs) {
 		Config.init(configs)
