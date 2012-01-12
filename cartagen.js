@@ -5376,6 +5376,17 @@ var Cartagen = {
 		if (type == "text") return tags.toJSON()
 		else if (type == "alert") alert(tags.toJSON())
 		else return tags
+	},
+
+	clear_map: function() {
+		Geohash.clear_objects();
+	},
+
+	load_static_map_layers: function(urls) {
+		urls.each(function(layer_url) {
+			$l('fetching '+layer_url)
+			Importer.get_static_plot(layer_url)
+		},this)
 	}
 }
 
@@ -6713,7 +6724,7 @@ var Importer = {
 		start_time = new Date().getTime()
 		if (data.osm.way) {
 			for(var i=0;i<data.osm.way.length;i++) {
-				Importer.parse_lightway(data.osm.way[i])
+				Importer.parse_way(data.osm.way[i])
 			}
 
 		}
@@ -8897,7 +8908,6 @@ Object.extend(Geohash, {
 	put: function(lat,lon,feature,length) {
 		if (!length) length = this.default_length
 
-		length = this.default_length
 
 		var key = this.get_key(lat,lon,length)
 
@@ -9157,6 +9167,18 @@ Object.extend(Geohash, {
 		this.hash.each(function(pair) {
 			pair.value.each(function(val) { f(val) })
 		})
+	},
+
+	clear_objects: function() {
+		this.hash.keys().each(function(key) {
+			Geohash.hash.unset(key)
+		})
+
+		this.object_hash.keys().each(function(key) {
+			Geohash.object_hash.unset(key)
+		})
+
+		this.objects.length = 0;
 	}
 })
 

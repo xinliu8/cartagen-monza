@@ -13,6 +13,11 @@ Object.extend(Geohash, {
 	 */
 	hash: new Hash(),
 	/**
+	 * Map of geohash -> (layer -> features)
+	 * @type Hash (String -> (String- > Feature[]))
+	 */
+	layered_hash: new Hash(),
+	/**
 	 * Array of all objects that should be drawn for the current frame
 	 * @type Feature[]
 	 */
@@ -85,8 +90,8 @@ Object.extend(Geohash, {
 	put: function(lat,lon,feature,length) {
 		if (!length) length = this.default_length
 		
-		// disable smart zooming based on length for now
-		length = this.default_length
+		// disable smart zooming based on length for now by uncomment the following
+		//length = this.default_length
 		
 		var key = this.get_key(lat,lon,length)
 		
@@ -507,6 +512,18 @@ Object.extend(Geohash, {
 		this.hash.each(function(pair) {
 			pair.value.each(function(val) { f(val) })
 		})
+	},
+	
+	clear_objects: function() {
+		this.hash.keys().each(function(key) {
+			Geohash.hash.unset(key)
+		})
+		
+		this.object_hash.keys().each(function(key) {
+			Geohash.object_hash.unset(key)
+		})
+		
+		this.objects.length = 0;
 	}
 })
 

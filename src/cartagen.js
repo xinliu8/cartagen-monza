@@ -438,6 +438,17 @@ var Cartagen = {
 		if (type == "text") return tags.toJSON()
 		else if (type == "alert") alert(tags.toJSON()) 
 		else return tags
+	},
+	
+	clear_map: function() {
+		Geohash.clear_objects();
+	},
+	
+	load_static_map_layers: function(urls) {
+		urls.each(function(layer_url) {
+			$l('fetching '+layer_url)
+			Importer.get_static_plot(layer_url)
+		},this)
 	}
 }
 
