@@ -17,11 +17,26 @@ var Node = Class.create(Feature,
 	initialize: function($super, node) {
 		$super()
 		Object.extend(this, node)
+		this.tags = new Hash()
+		if (node.tag){
+			if (node.tag instanceof Array) {
+				for(var i=0;i<node.tag.length;i++) {
+					this.tags.set(node.tag[i].k, node.tag[i].v)
+				}
+			} else {
+				this.tags.set(node.tag.k, node.tag.v)
+			}
+		}
 		this.h = 10
 		this.w = 10
 		this.x = Projection.lon_to_x(this.lon)
 		this.y = Projection.lat_to_y(this.lat)
 		this.color = Glop.random_color()
+		this.text = this.tags.get("name")
+		if (node.display) {
+			this.display = true
+			Geohash.put(this.lat, this.lon, this, 1)
+		}
 	},
 	/**
 	 * invokes Feature#draw
@@ -54,11 +69,13 @@ var Node = Class.create(Feature,
 		else {
 			$C.begin_path()
 			$C.translate(this.x, this.y-this.radius)
+			$C.fill_style('red')
+			this.radius = 10
 			$C.arc(0, this.radius, this.radius, 0, Math.PI*2, true)
 			$C.fill()
 			$C.stroke()
 		}
-		Label.prototype.draw.apply(this,0,0)
+		//Label.prototype.draw.apply(this,0,0)
 		$C.restore()
 	},
 	apply_default_styles: function($super) {

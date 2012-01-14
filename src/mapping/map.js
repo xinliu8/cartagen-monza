@@ -118,7 +118,9 @@ var Map = {
 	 * Current zoom level
 	 * @type Number
 	 */
-	 zoom: 0.5
+	 zoom: 0.5,
+	 
+	 static_map_layers: []
 }
 
 // bind to events

@@ -5387,6 +5387,20 @@ var Cartagen = {
 			$l('fetching '+layer_url)
 			Importer.get_static_plot(layer_url)
 		},this)
+	},
+
+	set_static_map_layers: function(urls) {
+		Map.static_map_layers = urls
+		/*var evt = document.createEvent("MouseEvents");
+		evt.initEvent('mousewheel', true, true);
+		evt.wheelDelta = 120;
+		window.dispatchEvent(evt);
+		evt.initEvent('mousewheel', true, true);
+		evt.wheelDelta = -120;
+		window.dispatchEvent(evt);*/
+
+		Geohash.last_get_objects[3] = true
+		Glop.trigger_draw(5)
 	}
 }
 
@@ -5874,11 +5888,26 @@ var Node = Class.create(Feature,
 	initialize: function($super, node) {
 		$super()
 		Object.extend(this, node)
+		this.tags = new Hash()
+		if (node.tag){
+			if (node.tag instanceof Array) {
+				for(var i=0;i<node.tag.length;i++) {
+					this.tags.set(node.tag[i].k, node.tag[i].v)
+				}
+			} else {
+				this.tags.set(node.tag.k, node.tag.v)
+			}
+		}
 		this.h = 10
 		this.w = 10
 		this.x = Projection.lon_to_x(this.lon)
 		this.y = Projection.lat_to_y(this.lat)
 		this.color = Glop.random_color()
+		this.text = this.tags.get("name")
+		if (node.display) {
+			this.display = true
+			Geohash.put(this.lat, this.lon, this, 1)
+		}
 	},
 	draw: function($super) {
 		if (this.img && typeof this.img == 'string') {
@@ -5902,11 +5931,12 @@ var Node = Class.create(Feature,
 		else {
 			$C.begin_path()
 			$C.translate(this.x, this.y-this.radius)
+			$C.fill_style('red')
+			this.radius = 10
 			$C.arc(0, this.radius, this.radius, 0, Math.PI*2, true)
 			$C.fill()
 			$C.stroke()
 		}
-		Label.prototype.draw.apply(this,0,0)
 		$C.restore()
 	},
 	apply_default_styles: function($super) {
@@ -6227,6 +6257,8 @@ var Label = Class.create(
         this.owner = owner
     },
     draw: function(x, y) {
+		if(!this.text)
+			this.text = this.owner.text
         if (this.text) {
 			$C.open('background')
             $C.save()
@@ -6470,6 +6502,9 @@ var Importer = {
 	requested_plots: 0,
 	plots: new Hash(),
 	parse_manager: null,
+
+	current_layer: "",
+
 	init: function() {
 		Importer.parse_manager = new TaskManager(50)
 		$l('set up parse_manager')
@@ -6540,6 +6575,7 @@ var Importer = {
 			onSuccess: function(result) {
 				try {
 					$l('formed correctly: '+result.responseText)
+					Importer.current_layer = url
 					Importer.parse_objects(Importer.parse(result.responseText))
 				} catch(e) {
 					$l('Malformed JSON, did not parse. Try removing trailing commas and extra whitespace. Test your JSON by typing \"Importer.parse(\'{"your": "json", "goes": "here"}\')\" ==> '+result.responseText)
@@ -6629,12 +6665,6 @@ var Importer = {
 		if (!Object.isUndefined(node.image)) $l('got image!!')
 		Style.parse_simple_styles(n,Style.styles.node)
 		Feature.nodes.set(n.id,n)
-		if (node.display) {
-			n.display = true
-			n.radius = 50
-			$l(n.img)
-			Geohash.put(n.lat, n.lon, n, 1)
-		}
 	},
 	parse_lightway: function(way){
 		if (Config.live || !Feature.ways.get(way.id)) {
@@ -6730,7 +6760,7 @@ var Importer = {
 		}
 
 
-	}
+	},
 }
 
 document.observe('cartagen:init', Importer.init.bindAsEventListener(Importer))
@@ -8886,6 +8916,7 @@ Object.extend(Geohash, Enumerable)
 Object.extend(Geohash, {
 	_dirs: ['top','bottom','left','right'],
 	hash: new Hash(),
+	layered_hash: new Hash(),
 	objects: [],
 	object_hash: new Hash(),
 	grid: false,
@@ -8908,6 +8939,7 @@ Object.extend(Geohash, {
 	put: function(lat,lon,feature,length) {
 		if (!length) length = this.default_length
 
+		length = this.default_length
 
 		var key = this.get_key(lat,lon,length)
 
@@ -8917,8 +8949,16 @@ Object.extend(Geohash, {
 		} else {
 			merge_hash.push(feature)
 		}
-
 		this.hash.set(key,merge_hash)
+
+		if(!this.layered_hash.get(key)) {
+			this.layered_hash.set(key, new Hash())
+		}
+		if(!this.layered_hash.get(key).get(Importer.current_layer)) {
+			this.layered_hash.get(key).set(Importer.current_layer, [])
+		}
+
+		this.layered_hash.get(key).get(Importer.current_layer).push(feature)
 	},
 	put_object: function(feature) {
 		this.put(Projection.y_to_lat(feature.y),
@@ -8939,7 +8979,19 @@ Object.extend(Geohash, {
 		return this.hash.get(key)
 	},
 	get_from_key: function(key) {
-		return this.hash.get(key) || []
+
+		var features = []
+		if(this.layered_hash.get(key)) {
+			Map.static_map_layers.each(function(layer) {
+				if(Geohash.layered_hash.get(key).get(layer)) {
+					Geohash.layered_hash.get(key).get(layer).each(function(feature) {
+						features.push(feature)
+					})
+				}
+			})
+		}
+
+		return features
 	},
 	get_upward: function(key) {
 		key.truncate(this.limit_bottom,'')
@@ -9425,7 +9477,9 @@ var Map = {
 	lat_height: 0,
 	resolution: 0,
 	last_pos: [0,0],
-	 zoom: 0.5
+	 zoom: 0.5,
+
+	 static_map_layers: []
 }
 
 document.observe('cartagen:init', Map.init.bindAsEventListener(Map))

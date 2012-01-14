@@ -66,6 +66,8 @@ var Label = Class.create(
 	 * @param {Number} y
 	 */
     draw: function(x, y) {
+		if(!this.text)
+			this.text = this.owner.text
         if (this.text) {
 			$C.open('background')
             $C.save()

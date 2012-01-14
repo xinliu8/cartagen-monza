@@ -96,14 +96,23 @@ Object.extend(Geohash, {
 		var key = this.get_key(lat,lon,length)
 		
 		// check to see if the geohash is already populated:
+		// will comment out the following after layered_hash works
 		var merge_hash = this.hash.get(key)
 		if (!merge_hash) {
 			merge_hash = [feature]
 		} else {
 			merge_hash.push(feature)
 		}
-		
 		this.hash.set(key,merge_hash)
+		
+		if(!this.layered_hash.get(key)) {
+			this.layered_hash.set(key, new Hash())
+		}
+		if(!this.layered_hash.get(key).get(Importer.current_layer)) {
+			this.layered_hash.get(key).set(Importer.current_layer, [])
+		}
+		
+		this.layered_hash.get(key).get(Importer.current_layer).push(feature)
 	},
 	/**
 	 * Puts a feature into the geohash index. Finds latitude and longitude from
@@ -159,7 +168,20 @@ Object.extend(Geohash, {
 	 * @see Geohash.get_upward
 	 */
 	get_from_key: function(key) {
-		return this.hash.get(key) || []
+		//return this.hash.get(key) || []
+		
+		var features = []
+		if(this.layered_hash.get(key)) {
+			Map.static_map_layers.each(function(layer) {
+				if(Geohash.layered_hash.get(key).get(layer)) {
+					Geohash.layered_hash.get(key).get(layer).each(function(feature) {
+						features.push(feature)
+					})
+				}
+			})
+		} 
+		
+		return features
 	},
 	/**
 	 * Fetch features in a geohash from a geohash key, and all shorter keys
@@ -238,7 +260,7 @@ Object.extend(Geohash, {
 		return [top, top_right, right, bottom_right, bottom, bottom_left, left, top_left]
 	},
 	/**
-	 * Fetch adjacent geohashes
+	 * Fetch adjacent geohashes, not used by any now
 	 * @param {String} key Central geohash
 	 * @return Array of neighbors
 	 * @type Feature[]

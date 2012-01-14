@@ -449,6 +449,21 @@ var Cartagen = {
 			$l('fetching '+layer_url)
 			Importer.get_static_plot(layer_url)
 		},this)
+	},
+	
+	set_static_map_layers: function(urls) {
+		Map.static_map_layers = urls
+		/*var evt = document.createEvent("MouseEvents");
+		evt.initEvent('mousewheel', true, true);
+		evt.wheelDelta = 120;
+		window.dispatchEvent(evt);
+		evt.initEvent('mousewheel', true, true);
+		evt.wheelDelta = -120;
+		window.dispatchEvent(evt);*/
+		
+		// this is critical to force Geohash.get_objects
+		Geohash.last_get_objects[3] = true
+		Glop.trigger_draw(5)
 	}
 }
 

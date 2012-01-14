@@ -17,6 +17,9 @@ var Importer = {
 	 * A TaskManager that performs feature parsing
 	 */
 	parse_manager: null,
+	
+	current_layer: "",
+	
 	init: function() {
 		Importer.parse_manager = new TaskManager(50)
 		$l('set up parse_manager')
@@ -108,6 +111,7 @@ var Importer = {
 			onSuccess: function(result) {
 				try {
 					$l('formed correctly: '+result.responseText)
+					Importer.current_layer = url
 					Importer.parse_objects(Importer.parse(result.responseText))
 				} catch(e) {
 					$l('Malformed JSON, did not parse. Try removing trailing commas and extra whitespace. Test your JSON by typing \"Importer.parse(\'{"your": "json", "goes": "here"}\')\" ==> '+result.responseText)
@@ -230,12 +234,6 @@ var Importer = {
 		// but we're missing some nodes when we render... semantic ones i think. cross-check.
 		// objects.push(n)
 		Feature.nodes.set(n.id,n)
-		if (node.display) {
-			n.display = true
-			n.radius = 50
-			$l(n.img)
-			Geohash.put(n.lat, n.lon, n, 1)
-		}
 	},
 	parse_lightway: function(way){
 		if (Config.live || !Feature.ways.get(way.id)) {
@@ -349,7 +347,7 @@ var Importer = {
 
 		// sort by polygons' node count:
 		// objects.sort(Geometry.sort_by_area)
-	}
+	},
 }
 
 document.observe('cartagen:init', Importer.init.bindAsEventListener(Importer))
