@@ -91,7 +91,7 @@ Object.extend(Geohash, {
 		if (!length) length = this.default_length
 		
 		// disable smart zooming based on length for now by uncomment the following
-		//length = this.default_length
+		length = this.default_length
 		
 		var key = this.get_key(lat,lon,length)
 		
@@ -168,11 +168,13 @@ Object.extend(Geohash, {
 	 * @see Geohash.get_upward
 	 */
 	get_from_key: function(key) {
-		//return this.hash.get(key) || []
+		if(!Config.static_map) {
+			return this.hash.get(key) || []
+		}
 		
 		var features = []
 		if(this.layered_hash.get(key)) {
-			Map.static_map_layers.each(function(layer) {
+			Config.static_map_layers.each(function(layer) {
 				if(Geohash.layered_hash.get(key).get(layer)) {
 					Geohash.layered_hash.get(key).get(layer).each(function(feature) {
 						features.push(feature)

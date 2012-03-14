@@ -335,7 +335,11 @@ var Importer = {
 			//var way_task = new Task(data.osm.way, Importer.parse_lightway, cond)
 			//Importer.parse_manager.add(way_task)
 			for(var i=0;i<data.osm.way.length;i++) {
-				Importer.parse_way(data.osm.way[i])
+				if(Config.static_map){
+					Importer.parse_way(data.osm.way[i])
+				} else {
+					Importer.parse_lightway(data.osm.way[i])
+				}
 			}
 			
 			//$l('Duration for parsing ' + data.osm.way.length.toString() + ' ways is ' + (new Date().getTime() - start_time).toString())

@@ -6754,7 +6754,11 @@ var Importer = {
 		start_time = new Date().getTime()
 		if (data.osm.way) {
 			for(var i=0;i<data.osm.way.length;i++) {
-				Importer.parse_way(data.osm.way[i])
+				if(Config.static_map){
+					Importer.parse_way(data.osm.way[i])
+				} else {
+					Importer.parse_lightway(data.osm.way[i])
+				}
 			}
 
 		}
@@ -8979,10 +8983,13 @@ Object.extend(Geohash, {
 		return this.hash.get(key)
 	},
 	get_from_key: function(key) {
+		if(!Config.static_map) {
+			return this.hash.get(key) || []
+		}
 
 		var features = []
 		if(this.layered_hash.get(key)) {
-			Map.static_map_layers.each(function(layer) {
+			Config.static_map_layers.each(function(layer) {
 				if(Geohash.layered_hash.get(key).get(layer)) {
 					Geohash.layered_hash.get(key).get(layer).each(function(feature) {
 						features.push(feature)
