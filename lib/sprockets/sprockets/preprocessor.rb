@@ -22,7 +22,7 @@ module Sprockets
         else
           unless source_line.comment? && strip_comments?
             name = source_file.pathname.to_s
-            name = name[name.rindex('/cartagen/')+10..-1]
+            name = name[name.rindex('/cartagen-monza/')+10..-1]
             @lines << name + ':' + source_file.cur_line.to_s
           end
           record_source_line(source_line)
